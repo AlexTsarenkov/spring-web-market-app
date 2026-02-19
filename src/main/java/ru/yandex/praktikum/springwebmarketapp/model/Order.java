@@ -3,6 +3,7 @@ package ru.yandex.praktikum.springwebmarketapp.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -10,16 +11,15 @@ import java.util.List;
 @Table(name = "orders")
 public class Order {
     @Id
-    @Column(name = "order_id")
-    private Long orderId;
+    private Long id;
 
-    @Id
-    @Column(name = "item_id")
-    private Long itemId;
+    @Column(name = "order_date")
+    LocalDateTime orderDate;
 
-    @Column(name = "item_quantity")
-    private Integer itemQuantity;
-
-    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "order_items",
+            joinColumns = {@JoinColumn(name = "order_id")},
+            inverseJoinColumns = {@JoinColumn(name = "item_id")})
     private List<Item> items;
 }

@@ -1,10 +1,18 @@
 package ru.yandex.praktikum.springwebmarketapp.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+
+import java.util.List;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Table(name = "items")
 public class Item {
     @Id
@@ -15,11 +23,21 @@ public class Item {
     private String description;
     private Double price;
 
-    @OneToOne
-    @JoinColumn(name = "itemId", nullable = false)
-    ItemImage image;
+    @Transient
+    private String imagePath;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id", referencedColumnName = "item_id")
-    private Order order;
+    @Transient
+    @Getter(AccessLevel.NONE)
+    private Integer count;
+
+    @ManyToMany(mappedBy = "items")
+    List<Order> orders;
+
+    public Integer getCount() {
+        if (count == null) {
+            return 0;
+        } else {
+            return count;
+        }
+    }
 }
