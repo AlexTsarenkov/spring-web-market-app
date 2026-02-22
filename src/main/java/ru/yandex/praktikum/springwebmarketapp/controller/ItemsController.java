@@ -1,19 +1,17 @@
 package ru.yandex.praktikum.springwebmarketapp.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 import ru.yandex.praktikum.springwebmarketapp.model.Item;
 import ru.yandex.praktikum.springwebmarketapp.model.Paging;
 import ru.yandex.praktikum.springwebmarketapp.service.ItemService;
+import ru.yandex.praktikum.springwebmarketapp.service.SessionService;
+import ru.yandex.praktikum.springwebmarketapp.utill.ItemQuantityAction;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +23,7 @@ import java.util.stream.Collectors;
 @RequestMapping({"/items", "/"})
 public class ItemsController {
     private final ItemService itemService;
+    private final SessionService sessionService;
     private Map<Long, Item> currentPageitems;
 
     @GetMapping
@@ -33,22 +32,20 @@ public class ItemsController {
                                  @RequestParam(name = "pageNumber", required = false, defaultValue = "1") int pageNum,
                                  @RequestParam(name = "pageSize", required = false, defaultValue = "5") int pageSize,
                                  HttpServletRequest request) {
-        HttpSession session = request.getSession(true);
-        Map<Long, Item> itemQuantityMap =
-                (Map<Long, Item>) session.getAttribute("ITEM_QUANTITY_MAP");
-
         Page<Item> itemPage = itemService.findAll(searchString, sort, pageNum, pageSize);
         List<Item> items = itemPage.getContent();
 
-        if (itemQuantityMap != null && !itemQuantityMap.isEmpty()) {
+        currentPageitems = items.stream()
+                .collect(Collectors.toMap(item -> item.getId(), item -> item));
+
+        Map<Long, Item> itemQuantityMap = sessionService.getItemQuantityMap(request).orElse(new HashMap<>());
+        if (!itemQuantityMap.isEmpty()) {
             items.stream().forEach(item -> {
                 item.setCount(itemQuantityMap.containsKey(item.getId()) ?
                         itemQuantityMap.get(item.getId()).getCount() : 0);
             });
         }
 
-        currentPageitems = items.stream()
-                .collect(Collectors.toMap(item -> item.getId(), item -> item));
 
         ModelAndView modelAndView = new ModelAndView("items");
         modelAndView.addObject("items", itemService.prepareDataForModel(itemPage.getContent()));
@@ -64,6 +61,28 @@ public class ItemsController {
         return modelAndView;
     }
 
+    @GetMapping("/{id}")
+    public ModelAndView getItem(@PathVariable Long id, HttpServletRequest request) {
+        Map<Long, Item> itemQuantityMap = sessionService.getItemQuantityMap(request).orElse(new HashMap<>());
+        Item item = currentPageitems.get(id);
+        if (itemQuantityMap.containsKey(item.getId())) {
+            item.setCount(itemQuantityMap.get(item.getId()).getCount());
+        }
+        ModelAndView modelAndView = new ModelAndView("item");
+        modelAndView.addObject("item", item);
+        return modelAndView;
+    }
+
+    @PostMapping("/{id}")
+    public RedirectView updateItem(@PathVariable Long id,
+                                   @RequestParam(name = "action") String action,
+                                   HttpServletRequest request) {
+        Item item = currentPageitems.get(id);
+        sessionService.changeItemQuantity(item, request, ItemQuantityAction.valueOf(action));
+        RedirectView redirectView = new RedirectView(String.format("/items/%d", id));
+        return redirectView;
+    }
+
     @PostMapping
     public RedirectView changeItemQuantity(@RequestParam(name = "id") Long itemId,
                                            @RequestParam(name = "search", required = false) String searchString,
@@ -72,32 +91,8 @@ public class ItemsController {
                                            @RequestParam(name = "pageSize", required = false, defaultValue = "5") int pageSize,
                                            @RequestParam(name = "action") String action,
                                            HttpServletRequest request) {
-        HttpSession session = request.getSession(true);
-        Map<Long, Item> itemQuantityMap =
-                (Map<Long, Item>) session.getAttribute("ITEM_QUANTITY_MAP");
-        if (itemQuantityMap == null) {
-            itemQuantityMap = new HashMap<>();
-        }
-        if (itemQuantityMap.containsKey(itemId)) {
-            int itemQuantity = itemQuantityMap.get(itemId).getCount();
-
-            itemQuantity = switch (action) {
-                case "PLUS" -> itemQuantity + 1;
-                case "MINUS" -> itemQuantity >= 1 ? itemQuantity - 1 : 0;
-                default -> itemQuantity;
-            };
-
-            itemQuantityMap.get(itemId).setCount(itemQuantity);
-
-        } else {
-            if (action.equals("PLUS")) {
-                Item item = currentPageitems.get(itemId);
-                item.setCount(item.getCount() + 1);
-                itemQuantityMap.put(itemId, item);
-            }
-        }
-
-        session.setAttribute("ITEM_QUANTITY_MAP", itemQuantityMap);
+        Item item = currentPageitems.get(itemId);
+        sessionService.changeItemQuantity(item, request, ItemQuantityAction.valueOf(action));
 
         StringBuilder path = new StringBuilder("/items");
 

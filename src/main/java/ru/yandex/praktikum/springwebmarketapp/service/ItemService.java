@@ -6,8 +6,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.stereotype.Service;
 import ru.yandex.praktikum.springwebmarketapp.model.Item;
 import ru.yandex.praktikum.springwebmarketapp.repository.ItemRepository;
@@ -76,7 +74,7 @@ public class ItemService {
                 .id(-1L)
                 .title("")
                 .description("")
-                .imagePath("")
+                .imgPath("")
                 .price(0.0)
                 .count(0)
                 .build();

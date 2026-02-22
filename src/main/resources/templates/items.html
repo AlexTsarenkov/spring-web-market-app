@@ -54,7 +54,7 @@
             <div class="col" th:each="item : ${itemsRow}">
                 <div class="card" th:if="${item.getId() != -1}">
                     <a th:href="${'/items/'+item.getId()}">
-                        <img th:src="${'/'+item.getImagePath()}" class="card-img-top" alt="Нет изображения">
+                        <img class="p-2" th:src="@{${'/' + (!item.getImgPath().isBlank()  ? item.getImgPath() : 'images/products/placeholder.png') }}" th:alt="${item.getTitle()}" width="300" height="300">
                     </a>
                     <div class="card-body">
                         <h5 class="card-title" th:text="${item.getTitle()}"></h5>
