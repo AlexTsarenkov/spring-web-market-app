@@ -10,7 +10,7 @@ public final class PostgreSQLTestContainer {
     @ServiceConnection
     public static PostgreSQLContainer postgreSQLContainer =
             new PostgreSQLContainer("postgres:15")
-                    .withUsername("webapp_test")
+                    .withDatabaseName("webapp_test")
                     .withUsername("postgres")
                     .withPassword("admin");
 

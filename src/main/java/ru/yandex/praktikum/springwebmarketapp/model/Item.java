@@ -1,23 +1,19 @@
 package ru.yandex.praktikum.springwebmarketapp.model;
 
-import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @Table(name = "items")
 public class Item {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String title;
@@ -26,16 +22,13 @@ public class Item {
     @Getter(AccessLevel.NONE)
     private Double price;
 
-    @Column(name = "img_path")
+    @Column("img_path")
     @Getter(AccessLevel.NONE)
     private String imgPath;
 
     @Transient
     @Getter(AccessLevel.NONE)
     private Integer count;
-
-    @OneToMany(mappedBy = "item")
-    List<OrderItem> orderItems = new ArrayList<>();
 
     public Integer getCount() {
         if (count == null) {

@@ -1,36 +1,32 @@
 package ru.yandex.praktikum.springwebmarketapp.service;
 
 import lombok.AllArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.yandex.praktikum.springwebmarketapp.model.Item;
 import ru.yandex.praktikum.springwebmarketapp.repository.ItemRepository;
-import ru.yandex.praktikum.springwebmarketapp.repository.specifiation.ItemSpecification;
 import ru.yandex.praktikum.springwebmarketapp.utill.SortCriteria;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static ru.yandex.praktikum.springwebmarketapp.utill.SortCriteria.PRICE;
 
 @Service
 @AllArgsConstructor
 public class ItemService {
     private final ItemRepository itemRepository;
 
-    public Page<Item> findAll(String searchString, String sortBy, Integer page, Integer pageSize) {
-        // Спецификация для поиска
-        Specification<Item> specification = Specification
-                .where(ItemSpecification.applySearch(searchString));
+    public Mono<Page<Item>> findAll(String searchString, String sortBy, Integer page, Integer pageSize) {
 
         //сортировка
         Sort sort = null;
         try {
             SortCriteria criteria = SortCriteria.valueOf(sortBy);
             sort = switch (criteria) {
-                case NO -> null;
+                case NO -> Sort.unsorted();
                 case ALPHA -> Sort.by(Sort.Direction.ASC, "title");
                 case PRICE -> Sort.by(Sort.Direction.ASC, "price");
             };
@@ -39,16 +35,35 @@ public class ItemService {
         }
 
         // Пагинация по страницам
-        Pageable pageable = null;
+        Pageable pageable;
         if (sort != null) {
             pageable = PageRequest.of(page - 1, pageSize, sort);
         } else {
             pageable = PageRequest.of(page - 1, pageSize);
         }
 
-        //Получим данные через Hibernante
+        Flux<Item> itemsFlux;
+        Mono<Long> countMono;
 
-        return itemRepository.findAll(specification, pageable);
+        //Получим данные через Hibernante
+        if (searchString == null || searchString.isBlank()) {
+            itemsFlux = itemRepository.findAllBy(pageable);
+            countMono = itemRepository.count();
+        } else {
+            itemsFlux = itemRepository.findByTitleContainingIgnoreCase(searchString, pageable);
+            countMono = itemRepository.countByTitleContainingIgnoreCase(searchString);
+        }
+
+        return Mono.zip(itemsFlux.collectList(), countMono,
+                (items, total) -> new PageImpl<>(items, pageable, total));
+    }
+
+    public Mono<Item> findById(Long id) {
+        return itemRepository.findById(id);
+    }
+
+    public Flux<Item> findByIds(Iterable<Long> ids) {
+        return itemRepository.findAllById(ids);
     }
 
     public List<List<Item>> prepareDataForModel(List<Item> items) {

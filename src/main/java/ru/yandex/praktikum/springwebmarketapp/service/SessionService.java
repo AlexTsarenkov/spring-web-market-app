@@ -1,9 +1,10 @@
 package ru.yandex.praktikum.springwebmarketapp.service;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.praktikum.springwebmarketapp.model.Item;
+import org.springframework.web.server.WebSession;
+import reactor.core.publisher.Mono;
+import ru.yandex.praktikum.springwebmarketapp.model.Cart;
 import ru.yandex.praktikum.springwebmarketapp.utill.ItemQuantityAction;
 
 import java.util.HashMap;
@@ -11,44 +12,65 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class SessionService {
     public static final String SESSION_ITEM_QUANTITY = "ITEM_QUANTITY_MAP";
+    public static final String SESSION_CART_ITEMS = "CART_ITEMS";
 
-    public void changeItemQuantity(Item item,
-                                   HttpServletRequest request,
-                                   ItemQuantityAction action) {
-        HttpSession session = request.getSession(true);
-        Map<Long, Item> itemQuantityMap =
-                (Map<Long, Item>) session.getAttribute(SESSION_ITEM_QUANTITY);
-        if (itemQuantityMap == null) {
-            itemQuantityMap = new HashMap<>();
-        }
-        if (itemQuantityMap.containsKey(item.getId())) {
-            int itemQuantity = itemQuantityMap.get(item.getId()).getCount();
+    public Mono<Void> changeItemQuantity(Long itemId,
+                                         WebSession session,
+                                         ItemQuantityAction action) {
+
+        Map<Long, Integer> itemQuantityMap =
+                Optional.ofNullable(session.<Map<Long, Integer>>getAttribute(SESSION_ITEM_QUANTITY))
+                        .orElseGet(() -> {
+                            Map<Long, Integer> map = new HashMap<>();
+                            session.getAttributes().put(SESSION_ITEM_QUANTITY, map);
+                            return map;
+                        });
+        if (itemQuantityMap.containsKey(itemId)) {
+            int itemQuantity = itemQuantityMap.get(itemId);
 
             itemQuantity = switch (action) {
                 case PLUS -> itemQuantity + 1;
                 case MINUS -> itemQuantity >= 1 ? itemQuantity - 1 : 0;
             };
 
-            itemQuantityMap.get(item.getId()).setCount(itemQuantity);
+            itemQuantityMap.put(itemId, itemQuantity);
 
         } else {
             if (action.equals(ItemQuantityAction.PLUS)) {
-                item.setCount(item.getCount() + 1);
-                itemQuantityMap.put(item.getId(), item);
+                itemQuantityMap.put(itemId, 1);
             }
         }
-        session.setAttribute(SESSION_ITEM_QUANTITY, itemQuantityMap);
+        session.getAttributes().put(SESSION_ITEM_QUANTITY, itemQuantityMap);
+
+        return Mono.empty();
     }
 
-    public Optional<Map<Long, Item>> getItemQuantityMap(HttpServletRequest request) {
-        HttpSession session = request.getSession(true);
-        return Optional.ofNullable((Map<Long, Item>) session.getAttribute(SESSION_ITEM_QUANTITY));
+    public Mono<Optional<Map<Long, Integer>>> getItemQuantityMap(WebSession session) {
+        return Mono.fromSupplier(() ->
+                Optional.ofNullable(session.getAttribute(SESSION_ITEM_QUANTITY))
+        );
     }
 
-    public void clearItemQuantityMap(HttpServletRequest request) {
-        HttpSession session = request.getSession(true);
-        session.removeAttribute(SESSION_ITEM_QUANTITY);
+    public Mono<Void> clearItemQuantityMap(WebSession session) {
+        session.getAttributes().remove(SESSION_ITEM_QUANTITY);
+        session.getAttributes().remove(SESSION_CART_ITEMS);
+        return Mono.empty();
+    }
+
+    public Mono<Void> saveCurrentCart(WebSession session, Cart cart) {
+        session.getAttributes().put(SESSION_CART_ITEMS, cart);
+        return Mono.empty();
+    }
+
+    public Mono<Optional<Cart>> getCartItems(WebSession session) {
+        Cart cart = session.getAttribute(SESSION_CART_ITEMS);
+        if (cart == null) {
+            return Mono.fromSupplier(() -> Optional.empty());
+        } else {
+            return Mono.fromSupplier(() -> Optional.of(cart));
+        }
     }
 }
