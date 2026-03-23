@@ -1,18 +1,25 @@
 package ru.yandex.praktikum.springwebmarketapp.repository;
 
-import jakarta.persistence.QueryHint;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.yandex.praktikum.springwebmarketapp.model.Item;
 
 @Repository
-public interface ItemRepository extends JpaRepository<Item, Long>, JpaSpecificationExecutor<Item> {
-    @Override
-    @QueryHints(@QueryHint(name = "org.hibernate.cacheable", value = "true"))
-    Page<Item> findAll(Specification<Item> spec, Pageable pageable);
+public interface ItemRepository extends R2dbcRepository<Item, Long> {
+
+    // только пагинация
+    Flux<Item> findAllBy(Pageable pageable);
+
+    // пагинация + where
+    Flux<Item> findByTitleContainingIgnoreCase(String title, Pageable pageable);
+
+    // для подсчёта общего количества по фильтру (для Page)
+    Mono<Long> countByTitleContainingIgnoreCase(String title);
+
+    //поис по ид
+    Mono<Item> findById(Long id);
+
 }

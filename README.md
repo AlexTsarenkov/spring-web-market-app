@@ -1,7 +1,7 @@
 ## Spring web market app — Витрина интернет-магазина
 
 Веб-приложение витрины интернет-магазина, реализованное на Spring Boot 
-с использованием Thymeleaf, Maven и покрытием тестами. Проект выполнен
+с использованием реактивного стека WebFlux, Thymeleaf, Maven и покрытием тестами. Проект выполнен
 в рамках курса Яндекс.Практикум.
 
 Проект демонстрирует:
@@ -53,8 +53,8 @@
 
 -   Java 21
 -   Spring Boot
--   Spring MVC
--   Spring Data JPA
+-   Spring Data R2DBC
+-   Spring WebFlux
 -   Thymeleaf
 -   Maven
 -   PostgreSQL
@@ -74,10 +74,10 @@
 
 В application.properties указать параметры подключения:
 
-    spring.datasource.url=jdbc:postgresql://dbhost/dbtab
-    spring.datasource.username=postgres_user
-    spring.datasource.password=postgres_password
-    spring.jpa.hibernate.ddl-auto=update
+    spring.sql.init.mode=always
+    spring.r2dbc.url=r2dbc:postgresql://localhost:5432/webapp
+    spring.r2dbc.username=postgres
+    spring.r2dbc.password=admin
 
 3. Собрать и запустить
 
