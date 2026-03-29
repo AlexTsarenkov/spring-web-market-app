@@ -38,27 +38,25 @@ public class OrderService {
                         .totalSum(cart.getTotalPrice())
                         .items(cart.getItems().values().stream().toList())
                         .build())
-                .flatMap(order -> {
-                    return performPurchase(order.getTotalSum())
-                            .flatMap(voidResult -> {
-                                Mono<Order> createdOrder = orderRepository.save(order);
+                .flatMap(order -> performPurchase(order.getTotalSum())
+                        .then(Mono.defer(() -> {
+                            Mono<Order> createdOrder = orderRepository.save(order);
+                            return createdOrder.flatMap(crOrder -> {
+                                List<OrderItem> orderItems = order.getItems().stream()
+                                        .map(item -> OrderItem.builder()
+                                                .itemId(item.getId())
+                                                .orderId(crOrder.getId())
+                                                .quantity(item.getCount())
+                                                .build())
+                                        .toList();
 
-                                return createdOrder.flatMap(crOrder -> {
-                                    List<OrderItem> orderItems = order.getItems().stream()
-                                            .map(item -> OrderItem.builder()
-                                                    .itemId(item.getId())
-                                                    .orderId(crOrder.getId())
-                                                    .quantity(item.getCount())
-                                                    .build())
-                                            .toList();
-
-                                    return orderItemRepository.saveAll(orderItems)
-                                            .collectList().thenReturn(crOrder);
-                                });
-                            }).doOnError(throwable -> {
-                                throw new OrderCreationException(throwable);
+                                return orderItemRepository.saveAll(orderItems)
+                                        .collectList().thenReturn(crOrder);
                             });
-                });
+                        }))
+                        .doOnError(throwable -> {
+                            throw new OrderCreationException(throwable);
+                        }));
     }
 
     public Mono<Void> performPurchase(Double orderSum) {

@@ -9,11 +9,14 @@ import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
 import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import ru.yandex.praktikum.springwebmarketapp.model.Item;
 import ru.yandex.praktikum.springwebmarketapp.repository.ItemRepository;
 import ru.yandex.praktikum.springwebmarketapp.service.ItemService;
 import ru.yandex.praktikum.springwebmarketapp.testcontainer.PostgreSQLTestContainer;
+import ru.yandex.praktikum.springwebmarketapp.testcontainer.RedisTestContainer;
 import ru.yandex.praktikum.springwebmarketapp.utill.SortCriteria;
 
 import java.io.IOException;
@@ -22,8 +25,14 @@ import java.util.List;
 
 @SpringBootTest(classes = SpringWebMarketAppApplication.class)
 @Testcontainers
-@ImportTestcontainers(PostgreSQLTestContainer.class)
+@ImportTestcontainers({PostgreSQLTestContainer.class, RedisTestContainer.class})
 class ItemsR2dbcTest {
+
+    @DynamicPropertySource
+    static void registerProperties(DynamicPropertyRegistry registry) {
+        TestDynamicProperties.registerRedis(registry);
+    }
+
     @Autowired
     DatabaseClient databaseClient;
 
