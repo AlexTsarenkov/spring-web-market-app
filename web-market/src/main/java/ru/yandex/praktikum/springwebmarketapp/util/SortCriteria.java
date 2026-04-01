@@ -1,4 +1,4 @@
-package ru.yandex.praktikum.springwebmarketapp.utill;
+package ru.yandex.praktikum.springwebmarketapp.util;
 
 public enum SortCriteria {
     NO,

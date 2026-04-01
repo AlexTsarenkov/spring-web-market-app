@@ -1,7 +1,8 @@
 package ru.yandex.praktikum.springwebmarketapp.service;
 
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,12 +20,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class OrderService {
     private final CartService cartService;
     private final OrderItemRepository orderItemRepository;
     private final OrderRepository orderRepository;
     private final WebClient webClient;
+
+    @Value("${mock.appl.userid}")
+    private String mockUserId;
 
     public Flux<Order> getAllOrders() {
         return orderRepository.findAll();
@@ -39,6 +43,7 @@ public class OrderService {
                         .items(cart.getItems().values().stream().toList())
                         .build())
                 .flatMap(order -> performPurchase(order.getTotalSum())
+                        .onErrorMap(OrderCreationException::new)
                         .then(Mono.defer(() -> {
                             Mono<Order> createdOrder = orderRepository.save(order);
                             return createdOrder.flatMap(crOrder -> {
@@ -54,16 +59,14 @@ public class OrderService {
                                         .collectList().thenReturn(crOrder);
                             });
                         }))
-                        .doOnError(throwable -> {
-                            throw new OrderCreationException(throwable);
-                        }));
+                );
     }
 
     public Mono<Void> performPurchase(Double orderSum) {
         return webClient.post()
                 .uri("/payment/v1/processPayment")
                 .accept(MediaType.APPLICATION_JSON)
-                .body(Mono.just(new PaymentRequest("123", orderSum)), PaymentRequest.class)
+                .body(Mono.just(new PaymentRequest(mockUserId, orderSum)), PaymentRequest.class)
                 .retrieve()
                 .bodyToMono(Void.class);
     }

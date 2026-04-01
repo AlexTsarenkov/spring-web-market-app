@@ -23,7 +23,7 @@
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -70,6 +70,7 @@
                                 <useTags>true</useTags>
                                 <delegatePattern>true</delegatePattern>
                                 <library>spring-boot</library>
+                                <reactive>true</reactive>
                                 <useJakartaEe>true</useJakartaEe>
                             </configOptions>
                             <apiPackage>com.payments.api</apiPackage>

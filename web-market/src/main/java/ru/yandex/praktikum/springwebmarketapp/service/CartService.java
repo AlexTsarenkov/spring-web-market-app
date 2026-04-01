@@ -1,8 +1,8 @@
 package ru.yandex.praktikum.springwebmarketapp.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -10,27 +10,31 @@ import reactor.core.publisher.Mono;
 import ru.yandex.praktikum.springwebmarketapp.model.Cart;
 import ru.yandex.praktikum.springwebmarketapp.model.Item;
 import ru.yandex.praktikum.springwebmarketapp.model.PaymentBalanceResponse;
+import ru.yandex.praktikum.springwebmarketapp.repository.CartRedisRepository;
 import ru.yandex.praktikum.springwebmarketapp.repository.ItemRepository;
-import ru.yandex.praktikum.springwebmarketapp.utill.ItemQuantityAction;
+import ru.yandex.praktikum.springwebmarketapp.util.ItemQuantityAction;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class CartService {
-    public static final String REDIS_CART_ID = "currentCart";
-    public final RedisTemplate<String, Cart> redisTemplate;
     public final ItemRepository itemRepository;
     private final WebClient webClient;
+    private final CartRedisRepository cartRepository;
+
+    @Value("${mock.appl.userid}")
+    private String mockUserId;
+
+    @Value("${mock.appl.token}")
+    private String mockToken;
 
     public Mono<Boolean> isPurchaseAvailable() {
-        Cart cart = getCartFromRedis();
+        Cart cart = cartRepository.getCartFromRedis();
 
         return webClient.get()
-                .uri("/payment/v1/getBalance?userId=123&token=123")
+                .uri(String.format("/payment/v1/getBalance?userId=%s&token=%s", mockUserId, mockToken))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve().bodyToMono(PaymentBalanceResponse.class)
                 .flatMap(balance -> Mono.fromSupplier(() -> balance.getBalance() > cart.getTotalPrice()));
@@ -38,10 +42,8 @@ public class CartService {
 
     public Mono<Void> changeItemQuantity(Long itemId,
                                          ItemQuantityAction action) {
-        initCart();
-
-        Cart cart = getCartFromRedis();
-
+        cartRepository.initCart();
+        Cart cart = cartRepository.getCartFromRedis();
         Map<Long, Item> cartItems = cart.getItems();
 
         if (cartItems.containsKey(itemId)) {
@@ -55,7 +57,7 @@ public class CartService {
 
             item.setCount(itemQuantity);
             recalculateTotalPrice(cart);
-            updateCartInRedis(cart);
+            cartRepository.updateCartInRedis(cart);
             return Mono.empty();
         }
 
@@ -66,7 +68,7 @@ public class CartService {
                         cartItems.put(itemId, item);
                     }
                     recalculateTotalPrice(cart);
-                    updateCartInRedis(cart);
+                    cartRepository.updateCartInRedis(cart);
                     return Mono.<Void>empty();
                 })
                 .switchIfEmpty(Mono.defer(() -> {
@@ -83,32 +85,12 @@ public class CartService {
     }
 
     public Mono<Cart> getCart() {
-        initCart();
-        return Mono.fromSupplier(() -> getCartFromRedis());
+        cartRepository.initCart();
+        return Mono.fromSupplier(() -> cartRepository.getCartFromRedis());
     }
 
-
-    private void initCart() {
-        if (!redisTemplate.opsForValue().getOperations().hasKey(REDIS_CART_ID)) {
-            log.info("Creating new cart");
-            redisTemplate.opsForValue().set(
-                    REDIS_CART_ID,
-                    new Cart(new HashMap<>(), 0.0),
-                    15,
-                    TimeUnit.MINUTES
-            );
-        }
-    }
-
-    private Cart getCartFromRedis() {
-        return redisTemplate.opsForValue().get(REDIS_CART_ID);
-    }
-
-    private void updateCartInRedis(Cart cart) {
-        redisTemplate.opsForValue().set(REDIS_CART_ID, cart);
-    }
-
-    public void deleteCartFromRedis() {
-        redisTemplate.delete(REDIS_CART_ID);
+    public Mono<Void> deleteCartFromRedis() {
+        cartRepository.deleteCartFromRedis();
+        return Mono.empty();
     }
 }

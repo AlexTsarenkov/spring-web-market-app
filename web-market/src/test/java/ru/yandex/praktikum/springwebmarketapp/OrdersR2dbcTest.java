@@ -17,8 +17,8 @@ import ru.yandex.praktikum.springwebmarketapp.model.Cart;
 import ru.yandex.praktikum.springwebmarketapp.model.Item;
 import ru.yandex.praktikum.springwebmarketapp.model.Order;
 import ru.yandex.praktikum.springwebmarketapp.model.OrderItem;
+import ru.yandex.praktikum.springwebmarketapp.repository.CartRedisRepository;
 import ru.yandex.praktikum.springwebmarketapp.repository.OrderItemRepository;
-import ru.yandex.praktikum.springwebmarketapp.service.CartService;
 import ru.yandex.praktikum.springwebmarketapp.service.OrderService;
 import ru.yandex.praktikum.springwebmarketapp.testcontainer.PostgreSQLTestContainer;
 import ru.yandex.praktikum.springwebmarketapp.testcontainer.RedisTestContainer;
@@ -75,7 +75,7 @@ class OrdersR2dbcTest {
         databaseClient.sql(schemaSql).then().block();
         databaseClient.sql(dataSql).then().block();
 
-        redisTemplate.delete(CartService.REDIS_CART_ID);
+        redisTemplate.delete(CartRedisRepository.REDIS_CART_ID);
 
         Item item1 = Item.builder()
                 .id(1L)
@@ -98,7 +98,7 @@ class OrdersR2dbcTest {
         cartItems.put(1L, item1);
         cartItems.put(2L, item2);
         Cart cart = new Cart(cartItems, totalPrice);
-        redisTemplate.opsForValue().set(CartService.REDIS_CART_ID, cart);
+        redisTemplate.opsForValue().set(CartRedisRepository.REDIS_CART_ID, cart);
 
         PAYMENT_SERVER.enqueue(new MockResponse().setResponseCode(204));
     }

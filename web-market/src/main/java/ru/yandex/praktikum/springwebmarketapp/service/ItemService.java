@@ -7,7 +7,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.yandex.praktikum.springwebmarketapp.model.Item;
 import ru.yandex.praktikum.springwebmarketapp.repository.ItemRepository;
-import ru.yandex.praktikum.springwebmarketapp.utill.SortCriteria;
+import ru.yandex.praktikum.springwebmarketapp.util.SortCriteria;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +64,7 @@ public class ItemService {
         return itemRepository.findAllById(ids);
     }
 
-    public List<List<Item>> prepareDataForModel(List<Item> items) {
+    public List<List<Item>> groupItemsByRows(List<Item> items) {
         //Разложим в соответствии с шаблоном
         List<List<Item>> result = new ArrayList<>();
         int chunkSize = 3;

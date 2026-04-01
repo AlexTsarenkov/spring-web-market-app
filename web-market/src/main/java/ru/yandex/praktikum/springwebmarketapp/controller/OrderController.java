@@ -9,9 +9,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.reactive.result.view.Rendering;
 import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Mono;
-import ru.yandex.praktikum.springwebmarketapp.repository.OrderItemRepository;
+import ru.yandex.praktikum.springwebmarketapp.exception.OrderCreationException;
 import ru.yandex.praktikum.springwebmarketapp.service.CartService;
 import ru.yandex.praktikum.springwebmarketapp.service.ItemService;
+import ru.yandex.praktikum.springwebmarketapp.service.OrderItemService;
 import ru.yandex.praktikum.springwebmarketapp.service.OrderService;
 
 @AllArgsConstructor
@@ -20,14 +21,14 @@ public class OrderController {
     private final OrderService orderService;
     private final CartService cartService;
     private final ItemService itemService;
-    private final OrderItemRepository orderItemRepository;
+    private final OrderItemService orderItemService;
 
 
     @GetMapping("/orders")
     public Mono<Rendering> getAllOrders() {
         return orderService.getAllOrders()
                 .flatMap(order ->
-                        orderItemRepository.findByOrderId((order.getId()))
+                        orderItemService.getOrderItems((order.getId()))
                                 .flatMap(oi ->
                                         itemService.findById(oi.getItemId().longValue())
                                                 .map(item -> {
@@ -55,7 +56,7 @@ public class OrderController {
 
         return orderService.getOrder(orderId)
                 .flatMap(order ->
-                        orderItemRepository.findByOrderId((order.getId()))
+                        orderItemService.getOrderItems((order.getId()))
                                 .flatMap(oi ->
                                         itemService.findById(oi.getItemId().longValue())
                                                 .map(item -> {
@@ -86,6 +87,11 @@ public class OrderController {
                 .flatMap(order -> {
                     cartService.deleteCartFromRedis();
                     return Mono.fromSupplier(() -> Rendering.redirectTo("/orders/" + order.getId() + "?newOrder=true").build());
-                });
+                })
+                .onErrorResume(OrderCreationException.class, ex ->
+                        Mono.fromSupplier(
+                                () -> Rendering.view("error-page")
+                                        .modelAttribute("code", "ORDER_CREATION_ERROR")
+                                        .modelAttribute("message", ex.getMessage()).build()));
     }
 }

@@ -17,7 +17,7 @@ import ru.yandex.praktikum.springwebmarketapp.repository.ItemRepository;
 import ru.yandex.praktikum.springwebmarketapp.service.ItemService;
 import ru.yandex.praktikum.springwebmarketapp.testcontainer.PostgreSQLTestContainer;
 import ru.yandex.praktikum.springwebmarketapp.testcontainer.RedisTestContainer;
-import ru.yandex.praktikum.springwebmarketapp.utill.SortCriteria;
+import ru.yandex.praktikum.springwebmarketapp.util.SortCriteria;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -120,7 +120,7 @@ class ItemsR2dbcTest {
                 .findAll(null, SortCriteria.PRICE.toString(), 1, 20)
                 .block();
 
-        List<List<Item>> items = itemService.prepareDataForModel(itemPage.getContent());
+        List<List<Item>> items = itemService.groupItemsByRows(itemPage.getContent());
 
         Assertions.assertNotNull(items);
         Assertions.assertFalse(items.isEmpty());

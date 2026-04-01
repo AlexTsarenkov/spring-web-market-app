@@ -16,6 +16,10 @@ public class PaymentAccountService {
     }
 
     public void charge(String userId, double amount) {
+        if (!balances.containsKey(userId)) {
+            balances.put(userId, 250_000.0);
+        }
+
         if (amount <= 0) {
             throw new IllegalArgumentException("amount must be positive");
         }

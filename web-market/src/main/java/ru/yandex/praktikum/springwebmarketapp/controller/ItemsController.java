@@ -15,7 +15,7 @@ import ru.yandex.praktikum.springwebmarketapp.model.ItemModelAttribute;
 import ru.yandex.praktikum.springwebmarketapp.model.Paging;
 import ru.yandex.praktikum.springwebmarketapp.service.CartService;
 import ru.yandex.praktikum.springwebmarketapp.service.ItemService;
-import ru.yandex.praktikum.springwebmarketapp.utill.ItemQuantityAction;
+import ru.yandex.praktikum.springwebmarketapp.util.ItemQuantityAction;
 
 import java.util.List;
 import java.util.Map;
@@ -23,7 +23,7 @@ import java.util.Map;
 @Slf4j
 @Controller
 @AllArgsConstructor
-@RequestMapping({"/items", "/"})
+@RequestMapping({"/items"})
 public class ItemsController {
     private final ItemService itemService;
     private final CartService cartService;
@@ -32,8 +32,8 @@ public class ItemsController {
     public Mono<Rendering> getItems(@RequestParam(name = "search", required = false) String searchString,
                                     @RequestParam(name = "sort", required = false, defaultValue = "NO") String sort,
                                     @RequestParam(name = "pageNumber", required = false, defaultValue = "1") int pageNum,
-                                    @RequestParam(name = "pageSize", required = false, defaultValue = "5") int pageSize,
-                                    WebSession session) {
+                                    @RequestParam(name = "pageSize", required = false, defaultValue = "5") int pageSize
+    ) {
 
         log.debug("Getting items for search string: {}", searchString);
 
@@ -58,7 +58,7 @@ public class ItemsController {
 
                     return Rendering.view("items")
                             .modelAttribute("items",
-                                    itemService.prepareDataForModel(items))
+                                    itemService.groupItemsByRows(items))
                             .modelAttribute("search", searchString)
                             .modelAttribute("sort", sort)
                             .modelAttribute("paging", Paging.builder()
