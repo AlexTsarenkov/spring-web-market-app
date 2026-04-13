@@ -1,0 +1,126 @@
+openapi: 3.0.3
+info:
+  title: Payment Service API
+  description: RESTful API для сервиса платежей
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/payment/v1
+    description: Local development server
+
+paths:
+  /getBalance:
+    get:
+      summary: Получение баланса на счёте пользователя
+      description: Возвращает текущий баланс пользователя. Используется для проверки возможности оформления заказа.
+      operationId: getBalance
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          description: Идентификатор пользователя
+          schema:
+            type: string
+        - name: token
+          in: query
+          required: true
+          description: Токен аутентификации пользователя
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешный ответ с балансом пользователя
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balance:
+                    type: number
+                    format: double
+                    example: 1500.50
+                    description: Текущий баланс пользователя в валюте счёта
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Ошибка аутентификации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /processPayment:
+    post:
+      summary: Осуществление платежа
+      description: Производит списание суммы заказа с баланса пользователя. Если баланс недостаточен, операция отклоняется.
+      operationId: processPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '204':
+          description: Платёж успешно обработан (нет содержимого в ответе)
+        '400':
+          description: Некорректные данные в запросе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '402':
+          description: Недостаточный баланс для проведения платежа
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    PaymentRequest:
+      type: object
+      required:
+        - userId
+        - orderSum
+      properties:
+        userId:
+          type: string
+          example: "user-1"
+          description: Идентификатор пользователя (счёт для списания)
+        orderSum:
+          type: number
+          format: double
+          example: 999.99
+          description: Сумма заказа для списания с баланса
+    ErrorResponse:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          example: "INVALID_REQUEST"
+          description: Код ошибки
+        message:
+          type: string
+          example: "Invalid request parameters"
+          description: Человекочитаемое описание ошибки
+
+security:
+  - api_key: []
+
+
