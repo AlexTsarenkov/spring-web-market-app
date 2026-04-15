@@ -12,6 +12,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 import ru.yandex.praktikum.springwebmarketapp.service.CartService;
 import ru.yandex.praktikum.springwebmarketapp.service.ItemService;
+import ru.yandex.praktikum.springwebmarketapp.service.SecurityService;
 import ru.yandex.praktikum.springwebmarketapp.util.ItemQuantityAction;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,9 +32,13 @@ class ItemsControllerTest {
     @Mock
     private CartService cartService;
 
+    @Mock
+    private SecurityService securityService;
+
     @BeforeEach
     void setUp() {
-        webTestClient = WebTestClient.bindToController(new ItemsController(itemService, cartService)).build();
+        webTestClient = WebTestClient.bindToController(
+                new ItemsController(itemService, cartService, securityService)).build();
     }
 
     @Test

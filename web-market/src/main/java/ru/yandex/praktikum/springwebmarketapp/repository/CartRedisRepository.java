@@ -21,11 +21,12 @@ public class CartRedisRepository {
     @Value("${cart.ttl.minutes}")
     private long cartTtlMinutes;
 
-    public void initCart() {
-        if (!redisTemplate.opsForValue().getOperations().hasKey(REDIS_CART_ID)) {
+    public void initCart(String userId) {
+        String cartId = getCartId(userId);
+        if (!redisTemplate.opsForValue().getOperations().hasKey(cartId)) {
             log.info("Creating new cart");
             redisTemplate.opsForValue().set(
-                    REDIS_CART_ID,
+                    cartId,
                     new Cart(new HashMap<>(), 0.0),
                     cartTtlMinutes,
                     TimeUnit.MINUTES
@@ -33,15 +34,19 @@ public class CartRedisRepository {
         }
     }
 
-    public Cart getCartFromRedis() {
-        return redisTemplate.opsForValue().get(REDIS_CART_ID);
+    public Cart getCartFromRedis(String userId) {
+        return redisTemplate.opsForValue().get(getCartId(userId));
     }
 
-    public void updateCartInRedis(Cart cart) {
-        redisTemplate.opsForValue().set(REDIS_CART_ID, cart);
+    public void updateCartInRedis(Cart cart, String userId) {
+        redisTemplate.opsForValue().set(getCartId(userId), cart);
     }
 
-    public void deleteCartFromRedis() {
-        redisTemplate.delete(REDIS_CART_ID);
+    public void deleteCartFromRedis(String userId) {
+        redisTemplate.delete(getCartId(userId));
+    }
+
+    private String getCartId(String userId) {
+        return REDIS_CART_ID + ":" + userId;
     }
 }
