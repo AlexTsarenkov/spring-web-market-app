@@ -69,7 +69,7 @@ public class ItemsController {
                                         itemService.groupItemsByRows(items))
                                 .modelAttribute("search", searchString)
                                 .modelAttribute("sort", sort)
-                                .modelAttribute("isAnonUser", user.equals(securityService.ANONYMOUS_USER_KEY))
+                                .modelAttribute("isAnonUser", user.equals(SecurityService.ANONYMOUS_USER_KEY))
                                 .modelAttribute("paging", Paging.builder()
                                         .pageSize(pageSize)
                                         .pageNumber(pageNum)
@@ -95,7 +95,7 @@ public class ItemsController {
 
                         return Rendering.view("item")
                                 .modelAttribute("item", item)
-                                .modelAttribute("isAnonUser", user.equals(securityService.ANONYMOUS_USER_KEY))
+                                .modelAttribute("isAnonUser", user.equals(SecurityService.ANONYMOUS_USER_KEY))
                                 .build();
                     });
         });

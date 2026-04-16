@@ -102,4 +102,9 @@ public class CartService {
             return Mono.empty();
         });
     }
+
+    public Mono<Void> deleteCartFromRedis(String userId) {
+        cartRepository.deleteCartFromRedis(userId);
+        return Mono.empty();
+    }
 }

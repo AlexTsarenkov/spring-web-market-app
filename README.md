@@ -94,11 +94,18 @@
     spring.data.redis.lettuce.pool.max-wait=-1ms
     cart.ttl.minutes=15
 
-5. Подготовить keycloak сервер
+4. Подготовить keycloak сервер
    ``` 
    Демо конфигурация представленна 
    в проекте в файле `realm-export.json`
 
+5. Указать переменные окружения:
+    * `DB_URL` - URL для БД
+    * `DB_USER` - Имя пользователя для БД
+    * `DB_PASSWORD` - пароль для БД
+    * `KEYCLOAK_URI` - URI необходимого realm keycloak
+    * `KEYCLOAK_CLIENT_ID` - client id для keycloak
+    * `KEYCLOAK_CLIENT_SECRET` - client secret для keycloak
 6. Собрать и запустить
     ```
    mvn clean install

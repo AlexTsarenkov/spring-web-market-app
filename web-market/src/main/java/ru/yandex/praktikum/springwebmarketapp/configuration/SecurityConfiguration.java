@@ -10,14 +10,21 @@ import org.springframework.security.oauth2.client.registration.ReactiveClientReg
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
-import ru.yandex.praktikum.springwebmarketapp.service.CartService;
+import org.springframework.security.web.server.savedrequest.NoOpServerRequestCache;
+import ru.yandex.praktikum.springwebmarketapp.eventhandler.LogoutEventHandler;
 
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfiguration {
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http,
-                                                            ServerLogoutSuccessHandler logoutSuccessHandler) {
+                                                            ServerLogoutSuccessHandler logoutSuccessHandler,
+                                                            LogoutEventHandler logoutEventHandler) {
+        RedirectServerAuthenticationSuccessHandler oauth2LoginSuccessHandler =
+                new RedirectServerAuthenticationSuccessHandler("/items");
+        // иначе берётся URL из WebSessionServerRequestCache (часто «/») и перекрывает /items
+        oauth2LoginSuccessHandler.setRequestCache(NoOpServerRequestCache.getInstance());
+
         return http.authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.GET, "/items").permitAll()
                         .pathMatchers(HttpMethod.GET, "/items/{id}").permitAll()
@@ -28,10 +35,11 @@ public class SecurityConfiguration {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login")
-                        .authenticationSuccessHandler(
-                                new RedirectServerAuthenticationSuccessHandler("/items")))
+                        .authenticationSuccessHandler(oauth2LoginSuccessHandler)
+                )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
+                        .logoutHandler(handlers -> handlers.add(0, logoutEventHandler))
                         .logoutSuccessHandler(logoutSuccessHandler)
                 )
                 .csrf(csrf -> csrf.disable())
@@ -40,14 +48,12 @@ public class SecurityConfiguration {
 
     @Bean
     public ServerLogoutSuccessHandler oidcLogoutSuccessHandler(
-            ReactiveClientRegistrationRepository clientRegistrationRepository,
-            CartService cartService) {
+            ReactiveClientRegistrationRepository clientRegistrationRepository) {
         OidcClientInitiatedServerLogoutSuccessHandler oidcLogoutSuccessHandler =
                 new OidcClientInitiatedServerLogoutSuccessHandler(clientRegistrationRepository);
         oidcLogoutSuccessHandler.setPostLogoutRedirectUri("{baseUrl}");
 
-        return (webFilterExchange, authentication) -> cartService.deleteCartFromRedis()
-                .onErrorResume(ex -> reactor.core.publisher.Mono.empty())
-                .then(oidcLogoutSuccessHandler.onLogoutSuccess(webFilterExchange, authentication));
+        return (webFilterExchange, authentication) ->
+                oidcLogoutSuccessHandler.onLogoutSuccess(webFilterExchange, authentication);
     }
 }
