@@ -18,8 +18,12 @@
                 <h2>
                     <span class="badge text-bg-success">Витрина магазина</span>
                 </h2>
-                <a href="/orders" class="btn btn-secondary ms-auto bi bi-file-earmark-text"> Заказы</a>
-                <a href="/cart/items" class="btn btn-secondary bi bi-cart4"> Корзина</a>
+                <a th:if="${isAnonUser != true}" href="/orders" class="btn btn-secondary ms-auto bi bi-file-earmark-text"> Заказы</a>
+                <a th:if="${isAnonUser != true}" href="/cart/items" class="btn btn-secondary bi bi-cart4"> Корзина</a>
+                <form th:if="${isAnonUser != true}" method="post" th:action="@{/logout}" class="m-0">
+                    <button type="submit" class="btn btn-outline-danger bi bi-box-arrow-right"> Выйти</button>
+                </form>
+                <a th:if="${isAnonUser == true}" href="/login" class="btn btn-success ms-auto bi bi-box-arrow-right"> Войти</a>
             </div>
         </div>
     </div>
@@ -69,10 +73,10 @@
                             <input type="hidden" name="sort" th:value="${sort}">
                             <input type="hidden" name="pageSize" th:value="${paging.getPageSize()}">
                             <input type="hidden" name="pageNumber" th:value="${paging.getPageNumber()}">
-                            <button type="submit" class="btn btn-outline-secondary" name="action" value="MINUS">-</button>
+                            <button type="submit" class="btn btn-outline-secondary" name="action" value="MINUS" th:disabled="${isAnonUser}">-</button>
                             <span th:text="${item.getCount()}"></span>
-                            <button type="submit" class="btn btn-outline-secondary" name="action" value="PLUS">+</button>
-                            <button type="submit" class="btn btn-warning ms-auto bi bi-cart4" name="action" value="PLUS" th:if="${item.getCount()==0}"></button>
+                            <button type="submit" class="btn btn-outline-secondary" name="action" value="PLUS" th:disabled="${isAnonUser}">+</button>
+                            <button type="submit" class="btn btn-warning ms-auto bi bi-cart4" name="action" value="PLUS" th:if="${item.getCount()==0}" th:disabled="${isAnonUser}"></button>
                         </div>
                     </form>
                 </div>

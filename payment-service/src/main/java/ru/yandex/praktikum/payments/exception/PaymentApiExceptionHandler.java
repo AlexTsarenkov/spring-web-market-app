@@ -17,12 +17,12 @@ public class PaymentApiExceptionHandler {
 
     @ExceptionHandler(InsufficientBalanceException.class)
     public Mono<ResponseEntity<ErrorResponse>> insufficientBalance(InsufficientBalanceException ex) {
-        return Mono.just(error(HttpStatus.PAYMENT_REQUIRED, "INSUFFICIENT_BALANCE", "Insufficient balance for purchase"));
+        return Mono.just(error(HttpStatus.PAYMENT_REQUIRED, "INSUFFICIENT_BALANCE", ex.getMessage()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public Mono<ResponseEntity<ErrorResponse>> badRequest(IllegalArgumentException ex) {
-        return Mono.just(error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request"));
+        return Mono.just(error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", ex.getMessage()));
     }
 
     private static ResponseEntity<ErrorResponse> error(HttpStatus status, String code, String message) {

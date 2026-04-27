@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import ru.yandex.praktikum.payments.exception.UnauthorizedPaymentException;
 import ru.yandex.praktikum.payments.service.PaymentAccountService;
 
 @RestController
@@ -21,9 +20,6 @@ public class PaymentApiController implements DefaultApi {
     @Override
     public Mono<ResponseEntity<GetBalance200Response>> getBalance(String userId, String token,
                                                                     ServerWebExchange exchange) {
-        if (!isTokenAccepted(token)) {
-            return Mono.error(new UnauthorizedPaymentException("Invalid or missing credentials"));
-        }
         return Mono.fromCallable(() -> paymentAccountService.getBalance(userId))
                 .subscribeOn(Schedulers.boundedElastic())
                 .map(balance -> ResponseEntity.ok(new GetBalance200Response().balance(balance)));
@@ -40,9 +36,5 @@ public class PaymentApiController implements DefaultApi {
                     .subscribeOn(Schedulers.boundedElastic())
                     .thenReturn(ResponseEntity.noContent().build());
         });
-    }
-
-    private static boolean isTokenAccepted(String token) {
-        return true;
     }
 }

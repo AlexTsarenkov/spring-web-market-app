@@ -12,6 +12,7 @@
 -   оформление заказов
 -   пагинацию, поиск и сортировку
 -   тестирование приложения
+-   Возможности Spring security и Oauth 2.0
 
 ------------------------------------------------------------------------
 
@@ -62,6 +63,7 @@
 -   Mockito
   - Testcontainers
   - Redis
+  - Keycloak
 ------------------------------------------------------------------------
 
 ## Запуск проекта
@@ -80,8 +82,32 @@
     spring.r2dbc.username=postgres
     spring.r2dbc.password=admin
 
-3. Собрать и запустить
+3. Подготовить Redis
+   В application.properties указать параметры подключения:
+   
+    ```
+    spring.data.redis.host=localhost
+    spring.data.redis.port=6379
+    spring.data.redis.lettuce.pool.max-active=8
+    spring.data.redis.lettuce.pool.max-idle=8
+    spring.data.redis.lettuce.pool.min-idle=0
+    spring.data.redis.lettuce.pool.max-wait=-1ms
+    cart.ttl.minutes=15
 
+4. Подготовить keycloak сервер
+   ``` 
+   Демо конфигурация представленна 
+   в проекте в файле `realm-export.json`
+
+5. Указать переменные окружения:
+    * `DB_URL` - URL для БД
+    * `DB_USER` - Имя пользователя для БД
+    * `DB_PASSWORD` - пароль для БД
+    * `KEYCLOAK_URI` - URI необходимого realm keycloak
+    * `KEYCLOAK_CLIENT_ID` - client id для keycloak
+    * `KEYCLOAK_CLIENT_SECRET` - client secret для keycloak
+6. Собрать и запустить
+    ```
    mvn clean install
    mvn spring-boot:run
 
